@@ -1,0 +1,12 @@
+# 0 or 1
+debug_build : 1
+# -O0 -O1 -O2 -O3 -Og
+optimization : -O0
+# force_regenerate or auto_detect
+generate_mode : force_regenerate 
+# 0 or 1
+auto_add_file : 0
+# build path
+build_dir : BUILD
+# 0 or 1
+modify_asm : 1
