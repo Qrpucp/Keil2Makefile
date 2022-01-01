@@ -214,7 +214,7 @@ if __name__ == '__main__':
         print('find keil project ' + keil_peoject_name)
 
     keil_project_parent_path = path_process(get_parent_path(keil_project_path, '\\'), '')
-
+    
     # get user config from yaml file
     yaml_file_path = os.path.abspath(os.path.join(os.getcwd(), "..")) + '\Config\Config.yml'
     optimization = get_yaml_config(yaml_file_path, 'optimization')
@@ -286,7 +286,7 @@ if __name__ == '__main__':
     # get keil project config
     device = get_xml_config(keil_project_path, 'Device')
     defines = get_xml_config(keil_project_path, 'Define')
-    # misc_controls = get_xml_config(keil_project_path, 'MiscControls')
+    misc_controls = get_xml_config(keil_project_path, 'MiscControls')
     include_path = get_xml_config(keil_project_path, 'IncludePath')
     source_path = get_xml_config(keil_project_path, 'FilePath')
     target_name = get_xml_config(keil_project_path, 'TargetName')
@@ -296,8 +296,49 @@ if __name__ == '__main__':
     relative_source_path = path_absolute2relative(processed_source_path, root_path)
     delete_head_file(relative_source_path)
     defines = split_list(defines, ',')
-    # misc_controls = split_list(misc_controls, ',')
+    misc_controls = split_list(misc_controls, ' ')
     relative_include_path = split_list(relative_include_path, ';')
+    # to do: add C99 mode through <uC99>
+
+    # create link script
+    if not os.path.isfile(root_path + '\\' + device[0] + '_FLASH.ld') or generate_mode == 'force_regenerate':
+        new_link_script_src_path_1 = os.path.abspath(os.path.join(os.getcwd(), "..")) + '\LinkScript\\' + device[0] + '_FLASH.ld'
+        new_link_script_src_path_2 = os.path.abspath(os.path.join(os.getcwd(), "..")) + '\LinkScript\\' + device[0] + 'Tx_FLASH.ld'
+        try:
+            shutil.copy(new_link_script_src_path_1, root_path)
+            link_script_type = 'link_script_type1'
+            print('generate link script')
+        except:
+            try:
+                shutil.copy(new_link_script_src_path_2, root_path)
+                link_script_type = 'link_script_type2'
+                print('generate link script')
+            except:
+                print('failed to generate link script')
+
+    # get config from misc_controls
+    cpp_mode = 0
+    for misc_control in misc_controls:
+        if 'cpp' in misc_control:
+            # if add --cpp in Keil, all file compiled by g++
+            cpp_mode = 1
+
+    # add c_defines in makefile and get config from defines
+    use_dsp_flag = 0
+    for index, line in enumerate(makefile_lines):
+        if 'C_DEFS' in line:
+            status = status + 1
+            for define_index, define in enumerate(defines):
+                if 'ARM_MATH_CM4' in define:
+                    # use DSP library
+                    use_dsp_flag = 1;
+                    pass
+                elif '__CC_ARM' in define:
+                    # __CC_ARM represent ARM RealView, need to be removed
+                    continue
+                index = index + 1
+                makefile_lines.insert(index, '-D' + define + ' \\\n')
+            break
 
     # modify makefie file
     status = 0
@@ -318,6 +359,9 @@ if __name__ == '__main__':
                 if '.c' in source_path and '.cpp' not in source_path:
                     index = index + 1
                     makefile_lines.insert(index, source_path + ' \\\n')
+            if use_dsp_flag == 1:
+                index = index + 1
+                makefile_lines.insert(index, '$(wildcard Keil2Makefile/Library/DSP/Source/*/*.c) \\\n')
         if status == 3 and 'ASM_SOURCES' in line:
             status = status + 1
             if modify_asm == '0':
@@ -357,32 +401,32 @@ if __name__ == '__main__':
                         makefile_lines.insert(index, source_path[0 : len(source_path) - 3] + 's \\\n')
                     else:
                         makefile_lines.insert(index, source_path + ' \\\n')
-        if status == 4 and 'C_DEFS' in line:
+        # two cc need to be modify
+        if (status == 4 or status == 5) and 'CC = ' in line:
             status = status + 1
-            for define_index, define in enumerate(defines):
-                index = index + 1
-                makefile_lines.insert(index, '-D' + define + ' \\\n')
-        if status == 5 and 'C_INCLUDES' in line:
+            # if add --cpp in Keil, all file compiled by g++
+            if cpp_mode == 1:
+                makefile_lines[index] = str.replace(line, 'gcc', 'g++')
+        if status == 6 and 'C_INCLUDES' in line:
             status = status + 1
             for include_path_index, include_path in enumerate(relative_include_path):
                 index = index + 1
                 makefile_lines.insert(index, '-I' + include_path + ' \\\n')
-        if status == 6 and 'LDSCRIPT' in line:
+            if use_dsp_flag == 1:
+                index = index + 1
+                makefile_lines.insert(index, '-IKeil2Makefile/Library/DSP/Include \\\n')
+        if status == 7 and 'LDSCRIPT' in line:
             status = status + 1
             del makefile_lines[index]
-            makefile_lines.insert(index, 'LDSCRIPT = ' + device[0] + '_FLASH.ld\n')
-        if status == 7:
+            if link_script_type == 'link_script_type1':
+                makefile_lines.insert(index, 'LDSCRIPT = ' + device[0] + '_FLASH.ld\n')
+            elif link_script_type == 'link_script_type2':
+                makefile_lines.insert(index, 'LDSCRIPT = ' + device[0] + 'Tx_FLASH.ld\n')
+        if status == 8:
             break
 
     write_file_with_lines(new_makefile_path, makefile_lines)
 
-    # create link script
-    if not os.path.isfile(root_path + '\\' + device[0] + '_FLASH.ld') or generate_mode == 'force_regenerate':
-        new_link_script_src_path = os.path.abspath(os.path.join(os.getcwd(), "..")) + '\LinkScript\\' + device[0] + '_FLASH.ld'
-        try:
-            shutil.copy(new_link_script_src_path, root_path)
-            print('generate link script')
-        except:
-            print('failed to generate link script')
+    
 
 
