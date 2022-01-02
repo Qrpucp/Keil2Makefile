@@ -214,7 +214,7 @@ if __name__ == '__main__':
         print('find keil project ' + keil_peoject_name)
 
     keil_project_parent_path = path_process(get_parent_path(keil_project_path, '\\'), '')
-    
+
     # get user config from yaml file
     yaml_file_path = os.path.abspath(os.path.join(os.getcwd(), "..")) + '\Config\Config.yml'
     optimization = get_yaml_config(yaml_file_path, 'optimization')
@@ -298,6 +298,8 @@ if __name__ == '__main__':
     defines = split_list(defines, ',')
     misc_controls = split_list(misc_controls, ' ')
     relative_include_path = split_list(relative_include_path, ';')
+    # backspace make command wrong
+    target_name = str.replace(target_name[0], ' ', '_')
     # to do: add C99 mode through <uC99>
 
     # create link script
@@ -346,7 +348,7 @@ if __name__ == '__main__':
         if status == 0 and 'TARGET' in line:
             status = status + 1
             del makefile_lines[index]
-            makefile_lines.insert(index, 'TARGET = ' + target_name[0] + '\n')
+            makefile_lines.insert(index, 'TARGET = ' + target_name + '\n')
         if status == 1 and 'CPP_SOURCES' in line:
             status = status + 1
             for source_path_index, source_path in enumerate(relative_source_path):
@@ -383,8 +385,6 @@ if __name__ == '__main__':
                         new_startup_file_src_path = os.path.abspath(os.path.join(os.getcwd(), "..")) + \
                                                         '\StartupFile\startup_' + str.lower(device[0])[0:9] + 'xx.s'
                         new_startup_file_dst_path = str.replace(get_dir_path(startup_file_path, '/'), '/', '\\')
-                        print(new_startup_file_src_path)
-                        print(new_startup_file_dst_path)
                         if not os.path.exists(new_startup_file_dst_path):
                             os.makedirs(new_startup_file_dst_path)
                         try:
@@ -426,7 +426,3 @@ if __name__ == '__main__':
             break
 
     write_file_with_lines(new_makefile_path, makefile_lines)
-
-    
-
-

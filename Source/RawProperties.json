@@ -1,0 +1,12 @@
+{
+    "configurations": [
+      {
+        "name": "STM32",
+        "includePath": [
+        ],
+        "defines": [
+        ],
+        "compilerPath": "D:\\GNU ARM EMBEDDED TOOLCHAIN\\10 2021.07\\BIN\\ARM-NONE-EABI-GCC.EXE"
+      }
+    ]
+}
