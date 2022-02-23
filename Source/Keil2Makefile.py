@@ -188,7 +188,10 @@ def split_list(list, split_symbol):
     Returns:
         list: splited list
     """
-    return list[0].split(split_symbol)
+    if(list == []):
+        return []
+    else:
+        return list[0].split(split_symbol)
 
 def write_file_with_lines(file_name, lines):
     """write file with lines list
@@ -317,6 +320,14 @@ if __name__ == '__main__':
                 print('generate link script')
             except:
                 print('failed to generate link script')
+    
+        for index, line in enumerate(makefile_lines):
+            if 'LDSCRIPT' in line:
+                del makefile_lines[index]
+                if link_script_type == 'link_script_type1':
+                    makefile_lines.insert(index, 'LDSCRIPT = ' + device[0] + '_FLASH.ld\n')
+                elif link_script_type == 'link_script_type2':
+                    makefile_lines.insert(index, 'LDSCRIPT = ' + device[0] + 'Tx_FLASH.ld\n')
 
     # get config from misc_controls
     cpp_mode = 0
@@ -415,14 +426,10 @@ if __name__ == '__main__':
             if use_dsp_flag == 1:
                 index = index + 1
                 makefile_lines.insert(index, '-IKeil2Makefile/Library/DSP/Include \\\n')
-        if status == 7 and 'LDSCRIPT' in line:
-            status = status + 1
-            del makefile_lines[index]
-            if link_script_type == 'link_script_type1':
-                makefile_lines.insert(index, 'LDSCRIPT = ' + device[0] + '_FLASH.ld\n')
-            elif link_script_type == 'link_script_type2':
-                makefile_lines.insert(index, 'LDSCRIPT = ' + device[0] + 'Tx_FLASH.ld\n')
-        if status == 8:
+        if status == 7:
             break
 
     write_file_with_lines(new_makefile_path, makefile_lines)
+
+
+     
