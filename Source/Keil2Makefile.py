@@ -306,7 +306,7 @@ if __name__ == '__main__':
     # to do: add C99 mode through <uC99>
 
     # create link script
-    if not os.path.isfile(root_path + '\\' + device[0] + '_FLASH.ld') or generate_mode == 'force_regenerate':
+    if not os.path.isfile(root_path + '\\' + device[0] + '_FLASH.ld') or generate_mode == 'create':
         new_link_script_src_path_1 = os.path.abspath(os.path.join(os.getcwd(), "..")) + '\LinkScript\\' + device[0] + '_FLASH.ld'
         new_link_script_src_path_2 = os.path.abspath(os.path.join(os.getcwd(), "..")) + '\LinkScript\\' + device[0] + 'Tx_FLASH.ld'
         try:
@@ -328,6 +328,7 @@ if __name__ == '__main__':
                     makefile_lines.insert(index, 'LDSCRIPT = ' + device[0] + '_FLASH.ld\n')
                 elif link_script_type == 'link_script_type2':
                     makefile_lines.insert(index, 'LDSCRIPT = ' + device[0] + 'Tx_FLASH.ld\n')
+                break
 
     # get config from misc_controls
     cpp_mode = 0
